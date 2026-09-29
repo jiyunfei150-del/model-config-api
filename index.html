@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>模型配置接口手册</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* 布局：桌面左侧目录吸顶 + 右侧正文；手机单列。接口卡片 = 方法徽章 + 路径 + 请求/响应代码块 + 字段表 */
+:root{
+  --bg:#f6f7f8; --panel:#ffffff; --fg:#1d2328; --muted:#5b6670; --line:#dde2e6;
+  --accent:#0f6b73; --accent-soft:#e3f1f2; --code-bg:#f0f2f4; --code-fg:#23303a;
+  --get:#1f7a4d; --post:#2957a4; --put:#a4661b; --warn-bg:#fff6e5; --warn-fg:#7a4b00;
+  --sans:"IBM Plex Sans","PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#12171b; --panel:#182026; --fg:#e4e9ec; --muted:#9aa7b0; --line:#2a353d;
+  --accent:#5fc3cb; --accent-soft:#16333a; --code-bg:#0f1418; --code-fg:#d6e0e6;
+  --get:#5bc48b; --post:#7ea6ea; --put:#e0a55a; --warn-bg:#2f2614; --warn-fg:#f0c77a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12171b; --panel:#182026; --fg:#e4e9ec; --muted:#9aa7b0; --line:#2a353d;
+  --accent:#5fc3cb; --accent-soft:#16333a; --code-bg:#0f1418; --code-fg:#d6e0e6;
+  --get:#5bc48b; --post:#7ea6ea; --put:#e0a55a; --warn-bg:#2f2614; --warn-fg:#f0c77a; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:15px;line-height:1.7;margin:0}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:16px;padding-block:32px 64px;display:grid;grid-template-columns:220px minmax(0,1fr);gap:40px}
+nav.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 24px);align-self:start;font-size:13.5px}
+nav.toc .brand{font-weight:600;color:var(--accent);letter-spacing:.04em;font-size:12px;text-transform:uppercase;margin-bottom:12px}
+nav.toc a{display:block;color:var(--muted);text-decoration:none;padding:5px 10px;border-left:2px solid var(--line)}
+nav.toc a:hover,nav.toc a:focus-visible{color:var(--fg);border-left-color:var(--accent);outline:none}
+nav.toc .sub{padding-left:22px;font-family:var(--mono);font-size:12.5px}
+main{min-width:0}
+header.top h1{font-size:30px;line-height:1.25;margin:0 0 8px;text-wrap:balance;font-weight:600}
+header.top p.lead{color:var(--muted);margin:0 0 18px;max-width:66ch}
+.meta{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}
+.chip{font-size:12.5px;border:1px solid var(--line);border-radius:999px;padding:2px 10px;color:var(--muted);background:var(--panel)}
+.chip b{color:var(--fg);font-weight:500}
+.status{display:flex;gap:10px;align-items:flex-start;background:var(--warn-bg);color:var(--warn-fg);border-radius:8px;padding:12px 14px;margin:18px 0 8px;font-size:14px}
+h2{font-size:21px;margin:48px 0 12px;padding-top:8px;text-wrap:balance;font-weight:600}
+h3{font-size:16px;margin:26px 0 8px;font-weight:600}
+p,li{max-width:72ch}
+code{font-family:var(--mono);font-size:.9em;background:var(--code-bg);color:var(--code-fg);padding:1px 5px;border-radius:4px}
+.steps{counter-reset:s;list-style:none;padding:0;margin:12px 0;display:grid;gap:10px}
+.steps li{counter-increment:s;display:grid;grid-template-columns:28px minmax(0,1fr);gap:10px;align-items:start;max-width:none}
+.steps li::before{content:counter(s);width:24px;height:24px;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-weight:600;font-size:13px;display:grid;place-items:center;margin-top:2px;font-variant-numeric:tabular-nums}
+.ep{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0}
+.ep-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:6px}
+.m{font-family:var(--mono);font-size:12px;font-weight:500;padding:2px 8px;border-radius:5px;color:#fff;letter-spacing:.03em}
+.m.get{background:var(--get)} .m.post{background:var(--post)} .m.put{background:var(--put)}
+:root[data-theme="dark"] .m{color:#0d1216}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .m{color:#0d1216}}
+.path{font-family:var(--mono);font-size:15px;word-break:break-all}
+.ep-desc{color:var(--muted);margin:0 0 6px}
+.code{position:relative;margin:10px 0}
+.code .lbl{font-size:12px;color:var(--muted);margin-bottom:4px;letter-spacing:.03em}
+pre{margin:0;background:var(--code-bg);color:var(--code-fg);border-radius:8px;padding:14px 16px;overflow-x:auto;font-family:var(--mono);font-size:13px;line-height:1.6}
+.copy{position:absolute;top:24px;right:8px;font:12px var(--sans);border:1px solid var(--line);background:var(--panel);color:var(--muted);border-radius:6px;padding:2px 9px;cursor:pointer}
+.copy:hover,.copy:focus-visible{color:var(--fg);border-color:var(--accent);outline:none}
+.tbl{overflow-x:auto;margin:10px 0}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:520px}
+th,td{text-align:left;vertical-align:top;padding:8px 10px;border-bottom:1px solid var(--line)}
+th{font-weight:600;color:var(--muted);font-size:12.5px;letter-spacing:.03em}
+td code{white-space:nowrap}
+.note{border-left:3px solid var(--accent);padding:4px 0 4px 12px;margin:12px 0;color:var(--fg)}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:12px 0;font-size:14px}
+.flow span{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:4px 10px}
+.flow i{font-style:normal;color:var(--muted)}
+footer{margin-top:56px;color:var(--muted);font-size:13px;border-top:1px solid var(--line);padding-top:14px}
+@media (max-width:860px){.wrap{grid-template-columns:minmax(0,1fr);gap:8px}nav.toc{display:none}header.top h1{font-size:25px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+<nav class="toc" aria-label="目录">
+  <div class="brand">brain-query · 模型配置</div>
+  <a href="#overview">怎么运作</a>
+  <a href="#steps">对接步骤</a>
+  <a href="#common">通用约定</a>
+  <a href="#providers">接入厂商</a>
+  <a class="sub" href="#providers">GET /providers</a>
+  <a href="#models">列可用模型</a>
+  <a class="sub" href="#models">POST /providers/{id}/models</a>
+  <a href="#config">页面配置</a>
+  <a class="sub" href="#config-get">GET /config</a>
+  <a class="sub" href="#config-validate">POST /config/validate</a>
+  <a class="sub" href="#config-put">PUT /config</a>
+  <a href="#connectivity">连通测试</a>
+  <a class="sub" href="#connectivity">POST /connectivity</a>
+  <a href="#errors">错误码</a>
+  <a href="#ask">问数请求</a>
+</nav>
+
+<main>
+<header class="top">
+  <h1>模型配置接口手册</h1>
+  <p class="lead">模型配置页上的「模式 / 框架与过程模型 / 结果与分析模型」整份存成一份配置；能接哪些厂商由后端登记；保存后下一条问数就按新配置调模型，不用重启服务。</p>
+  <div class="meta">
+    <span class="chip">前缀 <b>/model-config/api/v1</b></span>
+    <span class="chip">格式 <b>JSON</b></span>
+    <span class="chip">更新 <b>2026-09-29</b></span>
+  </div>
+  <div class="status" role="note"><span aria-hidden="true">●</span><span><b>后端状态：</b>开发完成，尚未部署到预发。部署并打开接口后会通知联调；在此之前请按本文档先开发页面。</span></div>
+</header>
+
+<section id="overview">
+  <h2>怎么运作</h2>
+  <div class="flow"><span>页面编辑</span><i>→</i><span>试校验</span><i>→</i><span>保存（整份）</span><i>→</i><span>下一条问数生效</span></div>
+  <ul>
+    <li><b>整份替换</b>：每次保存都提交完整配置，JSON 里没有的 Key 即删除。</li>
+    <li><b>Key 存在后端</b>：只在提交时传明文，之后任何接口只返回掩码。</li>
+    <li><b>生效</b>：保存后本服务下一条问数立即用新配置；正在跑的那一条用旧配置跑完；同机其它进程 5 秒内跟上。</li>
+    <li><b>效果档</b>：三个框架（cc / cx / react）各有低、中、高三档，前端传的效果档 low / medium / high 对应三档，auto 或不传走中档。</li>
+    <li><b>所有模型默认不思考。</b></li>
+  </ul>
+</section>
+
+<section id="steps">
+  <h2>对接步骤</h2>
+  <ol class="steps">
+    <li><span>打开页面时调 <code>GET /config</code>。已保存过就展示 <code>config</code>；还没保存过就展示 <code>initial</code>（按服务器当前在用的模型算好的一份）。</span></li>
+    <li><span>「接入厂商」下拉用 <code>GET /providers</code> 的结果，页面只选厂商、不填地址。</span></li>
+    <li><span>用户添加模型时，用 <code>POST /providers/{id}/models</code> 列出这把 Key 能用的模型供选择。</span></li>
+    <li><span>需要时用 <code>POST /connectivity</code> 测某个模型通不通。</span></li>
+    <li><span>点「校验」调 <code>POST /config/validate</code>，把 <code>errors[].path</code> 标到对应的表单项上。</span></li>
+    <li><span>点「保存」调 <code>PUT /config</code>，带上一次读到的 <code>revision</code> 防止覆盖别人的修改。</span></li>
+  </ol>
+</section>
+
+<section id="common">
+  <h2>通用约定</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>项</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td>鉴权</td><td>请求头 <code>X-Api-Token</code>（服务令牌，由 BFF 持有，浏览器不直接拿）。</td></tr>
+      <tr><td>操作人</td><td>可选请求头 <code>X-Operator: &lt;用户标识&gt;</code>，记录谁保存的。</td></tr>
+      <tr><td>实例</td><td>每个环境（预发 / 正式）各自一份配置，BFF 按环境转发到对应服务。</td></tr>
+      <tr><td>失败格式</td><td><code>{"error": {"code", "message", "field_errors": [{"path","code","message"}], "current_revision"}}</code>；<code>path</code> 直接指到你们提交的 JSON，如 <code>/engines/cc/tiers/low</code>。</td></tr>
+      <tr><td>状态码</td><td>401 令牌不对 · 404 厂商不存在，或服务器没打开模型配置开关（整组接口不存在）· 409 版本冲突 · 422 字段错误或 Key 无效 · 429 厂商限流 · 502 厂商请求失败 · 503 服务器没配 API token</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="providers">
+  <h2>接入厂商</h2>
+  <div class="ep">
+    <div class="ep-head"><span class="m get">GET</span><span class="path">/providers</span></div>
+    <p class="ep-desc">后端已适配的厂商，「接入厂商」下拉的唯一来源。</p>
+    <div class="code"><div class="lbl">响应</div><button class="copy" type="button">复制</button><pre>{
+  "providers": [
+    {"id": "anthropic", "name": "Anthropic 官方", "protocols": ["anthropic"],
+     "business_data": false,
+     "default_key": {"env": "ANTHROPIC_OFFICIAL_KEY", "configured": true},
+     "static_models": []},
+    {"id": "openapi", "name": "OpenAPI 内网网关", "protocols": ["openai"],
+     "business_data": true, "...": "..."}
+  ],
+  "revision": "prv_…"
+}</pre></div>
+    <div class="tbl"><table>
+      <thead><tr><th>字段</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td><code>id</code></td><td>厂商标识，配置里的 <code>provider</code> 填它。目前有 <code>gateway</code>（AI 网关）、<code>openapi</code>（OpenAPI 内网网关）、<code>anthropic</code>、<code>glm_coding</code>、<code>deepseek</code>、<code>minimax</code>。</td></tr>
+        <tr><td><code>business_data</code></td><td>能否处理真实业务数据。只有 <code>true</code> 的厂商能当「结果与分析模型」；目前只有 OpenAPI 内网网关。也可能是模型名清单，表示只有这些模型可以。</td></tr>
+        <tr><td><code>default_key.configured</code></td><td>服务器上已有这家的默认 Key，页面不给 Key 也能用。</td></tr>
+        <tr><td><code>static_models</code></td><td>厂商没有列模型接口时后端登记的固定清单。</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</section>
+
+<section id="models">
+  <h2>列可用模型</h2>
+  <div class="ep">
+    <div class="ep-head"><span class="m post">POST</span><span class="path">/providers/{provider_id}/models</span></div>
+    <p class="ep-desc">列出某厂商某把 Key 能用的模型。请求体三选一。</p>
+    <div class="code"><div class="lbl">请求</div><button class="copy" type="button">复制</button><pre>{"secret": "sk-…"}      // 新填的 Key
+{"key_id": "k_glm"}     // 已保存的 Key
+{}                      // 用服务器上这家的默认 Key</pre></div>
+    <div class="code"><div class="lbl">响应</div><button class="copy" type="button">复制</button><pre>{
+  "provider_id": "anthropic",
+  "source": "remote",
+  "models": [
+    {"id": "claude-opus-5-5", "name": "Opus 5.5"},
+    {"id": "claude-fable-5-1", "name": "Fable 5.1"}
+  ],
+  "note": ""
+}</pre></div>
+    <div class="tbl"><table>
+      <thead><tr><th>source</th><th>含义</th><th>页面怎么做</th></tr></thead>
+      <tbody>
+        <tr><td><code>remote</code></td><td>厂商实时返回</td><td>直接给用户选</td></tr>
+        <tr><td><code>static</code></td><td>厂商没有列模型接口，给的是后端登记的清单</td><td>给用户选，同时允许手填</td></tr>
+        <tr><td><code>manual</code></td><td>两者都没有</td><td>让用户手填模型名</td></tr>
+      </tbody>
+    </table></div>
+    <p class="note">Key 无效返回 422（<code>AUTH_FAILED</code>），限流 429，连不上或超时 502。</p>
+  </div>
+</section>
+
+<section id="config">
+  <h2>页面配置</h2>
+
+  <div class="ep" id="config-get">
+    <div class="ep-head"><span class="m get">GET</span><span class="path">/config</span></div>
+    <p class="ep-desc">读当前配置。Key 只返回来源与掩码。</p>
+    <div class="code"><div class="lbl">已保存过</div><button class="copy" type="button">复制</button><pre>{
+  "config": { …与保存时同形状，keys[] 见下表… ,
+              "revision": "cfg_…", "updated_at": "2026-09-29T10:00:00+00:00",
+              "updated_by": "u_xxx" },
+  "revision": "cfg_…"
+}</pre></div>
+    <div class="code"><div class="lbl">还没保存过</div><button class="copy" type="button">复制</button><pre>{
+  "config": null,
+  "revision": "",
+  "initial": { …按服务器当前在用的模型算出的同形状配置，keys 为空… },
+  "initial_check": {"valid": true, "errors": []},
+  "initial_notes": ["cx：本机缺该框架的运行依赖，初始值里先关掉"]
+}</pre></div>
+    <p class="note"><code>initial</code> 里各档只写 <code>provider</code> 不写 <code>key</code>，表示沿用服务器上各厂商的默认 Key。用户核对后原样保存即可，保存前后模型调用不变。<code>initial_notes</code> 列出需要页面补齐的项。</p>
+    <div class="tbl"><table>
+      <thead><tr><th>读回的 keys[] 字段</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td><code>secret_source</code></td><td><code>page</code>=页面填的明文 · <code>env</code>=服务器环境变量 · <code>provider_env</code>=厂商默认 Key</td></tr>
+        <tr><td><code>masked_secret</code></td><td>掩码（如 <code>sk-****bbbb</code>），只用于展示，<b>不能再提交回来</b></td></tr>
+        <tr><td><code>env_name</code></td><td>用的是哪个环境变量</td></tr>
+        <tr><td><code>available</code></td><td>服务器现在能不能取到这把 Key</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="ep" id="config-body">
+    <h3 style="margin-top:0">请求体（试校验与保存相同）</h3>
+    <div class="code"><button class="copy" type="button" style="top:8px">复制</button><pre>{
+  "modes": {"deep": "cc", "quick": "react"},
+  "keys": [
+    {"id": "k_an",  "provider": "anthropic",  "name": "公共 Key", "secret": "sk-…"},
+    {"id": "k_glm", "provider": "glm_coding", "name": "公共 Key", "secret": "sk-…"},
+    {"id": "k_oa",  "provider": "openapi",    "name": "公共 Key", "secret": "sk-…"},
+    {"id": "k_gw",  "provider": "gateway",    "name": "公共 Key", "secret_env": "AI_GATEWAY_KEY"}
+  ],
+  "engines": {
+    "cc": {"enabled": true, "provider": "anthropic", "tiers": {
+      "low":    {"key": "k_glm", "model": "glm-5.3", "name": "glm-5.3"},
+      "medium": {"key": "k_an",  "model": "claude-opus-5-5", "name": "Opus · 官方主用"},
+      "high":   {"key": "k_an",  "model": "claude-fable-5-1"}}},
+    "codex": {"enabled": true, "provider": "gateway", "tiers": {"low": {…}, "medium": {…}, "high": {…}}},
+    "react": {"enabled": true, "provider": "auto",    "tiers": {"low": {…}, "medium": {…}, "high": {…}}}
+  },
+  "conclusion": {
+    "primary":  {"key": "k_oa", "model": "local/glm-5.3-flash"},
+    "fallback": {"key": "k_oa", "model": "local/qwen38-flash-next"}
+  }
+}</pre></div>
+    <div class="tbl"><table>
+      <thead><tr><th>字段</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td><code>modes</code></td><td>深度 / 快速模式各由哪个框架承接，值为 <code>cc</code> / <code>codex</code> / <code>react</code>。界面叫 cx 的框架写 <code>codex</code>。</td></tr>
+        <tr><td><code>keys[]</code></td><td><code>id</code>（字母数字开头，最长 64 位，长期不变）、<code>provider</code>（厂商标识）、<code>name</code>（显示名），加密钥给法之一，见下。</td></tr>
+        <tr><td>每档模型</td><td><code>model</code>=厂商那边的实际模型名（可从「列可用模型」选）；<code>key</code>=keys 里的 id；<code>name</code>=显示名，可选。不给 <code>key</code> 时写 <code>provider</code>，用该厂商的服务器默认 Key。</td></tr>
+        <tr><td><code>engines.*.provider</code></td><td>页面的「接入厂商」选择，只做记录；实际调用按每档所选 Key 的厂商走。<code>auto</code>=按模型自动路由。</td></tr>
+        <tr><td><code>engines.*.enabled</code></td><td>框架开关。开启的框架三档都必须选；模式不能指向关掉的框架。</td></tr>
+        <tr><td><code>conclusion</code></td><td>结果主模型与兜底，三个框架共用。必须是能处理业务数据的厂商，且主备不能是同一个。</td></tr>
+      </tbody>
+    </table></div>
+    <h3>Key 三种给法</h3>
+    <div class="tbl"><table>
+      <thead><tr><th>写法</th><th>含义</th></tr></thead>
+      <tbody>
+        <tr><td><code>"secret": "sk-…"</code></td><td>明文。新建或更换 Key 时用。</td></tr>
+        <tr><td><code>"secret_env": "变量名"</code></td><td>用服务器上的环境变量。</td></tr>
+        <tr><td>都不给</td><td>沿用已保存的那份（同一 id 且厂商没变）。新 Key 必须给。不改 Key 时去掉 <code>secret</code> 字段即可，不要把掩码传回来。</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="ep" id="config-validate">
+    <div class="ep-head"><span class="m post">POST</span><span class="path">/config/validate</span></div>
+    <p class="ep-desc">试校验，不保存、不落 Key。<code>valid=true</code> 表示这份内容现在保存一定能过校验。</p>
+    <div class="code"><div class="lbl">响应</div><button class="copy" type="button">复制</button><pre>{"valid": false,
+ "errors": [
+   {"path": "/conclusion/primary", "code": "DATA_POLICY_DENIED",
+    "message": "AI 网关（主网关） 的 GLM-5.3-FLASH 未登记可处理真实业务数据，不能当结果模型"}
+ ]}</pre></div>
+  </div>
+
+  <div class="ep" id="config-put">
+    <div class="ep-head"><span class="m put">PUT</span><span class="path">/config</span></div>
+    <p class="ep-desc">整份保存。可带 <code>If-Match: "&lt;revision&gt;"</code>：别人先保存了会返回 409 和 <code>current_revision</code>，请重新读取后再改。</p>
+    <div class="code"><div class="lbl">响应</div><button class="copy" type="button">复制</button><pre>{"config": { … }, "revision": "cfg_…", "changed": true}</pre></div>
+    <p class="note">内容和当前完全一样时不会重复写入，返回 <code>changed: false</code>。</p>
+  </div>
+</section>
+
+<section id="connectivity">
+  <h2>连通测试</h2>
+  <div class="ep">
+    <div class="ep-head"><span class="m post">POST</span><span class="path">/connectivity</span></div>
+    <p class="ep-desc">发一条最小请求测模型通不通，不保存任何东西。密钥给法同「列可用模型」。</p>
+    <div class="code"><div class="lbl">请求</div><button class="copy" type="button">复制</button><pre>{"provider": "glm_coding", "model": "glm-5.3", "secret": "sk-…", "purpose": "cc"}</pre></div>
+    <div class="code"><div class="lbl">响应</div><button class="copy" type="button">复制</button><pre>{"provider_id": "glm_coding", "model": "glm-5.3",
+ "ok": true, "outcome": "ok", "http_status": 200,
+ "latency_ms": 812, "protocol": "anthropic", "message": "HTTP 200"}</pre></div>
+    <div class="tbl"><table>
+      <thead><tr><th>outcome</th><th>含义</th></tr></thead>
+      <tbody>
+        <tr><td><code>ok</code></td><td>通了</td></tr>
+        <tr><td><code>auth_failed</code></td><td>Key 无效</td></tr>
+        <tr><td><code>model_not_found</code></td><td>模型名不对，或这家没有这个模型</td></tr>
+        <tr><td><code>rate_limited</code></td><td>被限流，不代表 Key 无效</td></tr>
+        <tr><td><code>request_rejected</code></td><td>请求被拒（常见于模型名或参数不被接受）</td></tr>
+        <tr><td><code>timeout</code> / <code>unreachable</code></td><td>超时 / 连不上，是地址或网络问题，不代表 Key 无效</td></tr>
+        <tr><td><code>upstream_error</code></td><td>厂商其它错误</td></tr>
+      </tbody>
+    </table></div>
+    <p class="note"><code>purpose</code> 选按谁的接口测：<code>cc</code> / <code>codex</code> / <code>react</code> / <code>conclusion</code>（缺省）。例如 cc 只能接 anthropic 协议，DeepSeek 测 cc 会返回 <code>ENGINE_INCOMPATIBLE</code>。</p>
+  </div>
+</section>
+
+<section id="errors">
+  <h2>错误码</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>code</th><th>含义</th><th>页面提示建议</th></tr></thead>
+    <tbody>
+      <tr><td><code>MASKED_VALUE</code></td><td>把掩码当密钥提交</td><td>不改 Key 就别传 secret</td></tr>
+      <tr><td><code>SECRET_UNAVAILABLE</code></td><td>没给密钥，服务器也没有默认 Key</td><td>请填写 Key</td></tr>
+      <tr><td><code>REQUIRED</code></td><td>开启的框架缺档 / 主备缺一 / 模式没选</td><td>标红对应项</td></tr>
+      <tr><td><code>UNKNOWN_PROVIDER</code></td><td>厂商不在已适配清单里</td><td>重新选厂商</td></tr>
+      <tr><td><code>DANGLING_REFERENCE</code></td><td>引用了不存在的 Key</td><td>重新选 Key</td></tr>
+      <tr><td><code>ENGINE_INCOMPATIBLE</code></td><td>该框架用不了这家（协议不支持）</td><td>换厂商或换框架</td></tr>
+      <tr><td><code>ENGINE_DISABLED</code></td><td>模式指向了关掉的框架</td><td>同一次保存里改掉模式映射</td></tr>
+      <tr><td><code>DATA_POLICY_DENIED</code></td><td>该厂商不能处理业务数据，不能当结果模型</td><td>结果模型改选内网模型</td></tr>
+      <tr><td><code>SAME_CALL_TARGET</code></td><td>兜底和主模型是同一个</td><td>换一个兜底模型</td></tr>
+      <tr><td><code>REVISION_CONFLICT</code></td><td>别人先保存了</td><td>重新读取后再改</td></tr>
+      <tr><td><code>AUTH_FAILED</code></td><td>列模型时 Key 无效</td><td>检查 Key</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="ask">
+  <h2>问数请求怎么用快速 / 深度</h2>
+  <p><code>/ask/stream</code> 请求体带 <code>"interaction_mode": "deep"</code> 或 <code>"quick"</code>，后端按页面配置的模式映射选框架；显式引擎路径（如 <code>/ask/stream/cc</code>）优先于模式映射。</p>
+</section>
+
+<footer>brain-query 问数引擎 · 模型配置接口 · 2026-09-29</footer>
+</main>
+</div>
+
+<script>
+document.querySelectorAll('.code').forEach(function (box) {
+  var btn = box.querySelector('.copy'), pre = box.querySelector('pre');
+  if (!btn || !pre) return;
+  btn.addEventListener('click', function () {
+    var text = pre.innerText, done = function () { btn.textContent = '已复制'; setTimeout(function () { btn.textContent = '复制'; }, 1500); };
+    var fallback = function () { var r = document.createRange(); r.selectNodeContents(pre); var s = getSelection(); s.removeAllRanges(); s.addRange(r); btn.textContent = '已选中，按 Ctrl+C'; };
+    try { navigator.clipboard.writeText(text).then(done, fallback); } catch (e) { fallback(); }
+  });
+});
+</script>
+</body>
+</html>
