@@ -121,13 +121,13 @@ footer{margin-top:56px;color:var(--muted);font-size:13px;border-top:1px solid va
 <section id="steps">
   <h2>对接步骤</h2>
   <ol class="steps">
-    <li><span>打开页面时调 <code>GET /config</code>。已保存过就展示 <code>config</code>；还没保存过就展示 <code>initial</code>（按服务器当前在用的模型算好的一份）。</span></li>
     <li><span>「接入厂商」下拉用 <code>GET /providers</code> 的结果，页面只选厂商、不填地址。</span></li>
     <li><span>用户添加模型时，用 <code>POST /providers/{id}/models</code> 列出这把 Key 能用的模型供选择。</span></li>
     <li><span>需要时用 <code>POST /connectivity</code> 测某个模型通不通。</span></li>
     <li><span>点「校验」调 <code>POST /config/validate</code>，把 <code>errors[].path</code> 标到对应的表单项上。</span></li>
-    <li><span>点「保存」调 <code>PUT /config</code>，带上一次读到的 <code>revision</code> 防止覆盖别人的修改。</span></li>
+    <li><span>点「保存」调 <code>PUT /config</code>，把整份配置推给我们。配置以前端为准，每次都推完整的一份。</span></li>
   </ol>
+  <p class="note">前端上线时只需做一次：调 <code>GET /config</code> 取 <code>initial</code>（按服务器当前在用的模型算好的一份）作为页面初始值。之后平时不用调它，它只用于排查服务器上当前生效的是哪一份。</p>
 </section>
 
 <section id="common">
@@ -205,7 +205,7 @@ footer{margin-top:56px;color:var(--muted);font-size:13px;border-top:1px solid va
 
   <div class="ep" id="config-get">
     <div class="ep-head"><span class="m get">GET</span><span class="path">/config</span></div>
-    <p class="ep-desc">读当前配置。Key 只返回来源与掩码。</p>
+    <p class="ep-desc">可选。平时不用调：前端上线时取一次 <code>initial</code> 作为初始值；之后只用于排查服务器上当前生效的配置。Key 只返回来源与掩码。</p>
     <div class="code"><div class="lbl">已保存过</div><button class="copy" type="button">复制</button><pre>{
   "config": { …与保存时同形状，keys[] 见下表… ,
               "revision": "cfg_…", "updated_at": "2026-09-29T10:00:00+00:00",
@@ -288,7 +288,7 @@ footer{margin-top:56px;color:var(--muted);font-size:13px;border-top:1px solid va
 
   <div class="ep" id="config-put">
     <div class="ep-head"><span class="m put">PUT</span><span class="path">/config</span></div>
-    <p class="ep-desc">整份保存。可带 <code>If-Match: "&lt;revision&gt;"</code>：别人先保存了会返回 409 和 <code>current_revision</code>，请重新读取后再改。</p>
+    <p class="ep-desc">整份保存（配置以前端为准，每次推完整的一份）。可选请求头 <code>If-Match: "&lt;revision&gt;"</code>：带了且与服务器当前版本不一致会返回 409；前端是配置正本时不用带。</p>
     <div class="code"><div class="lbl">响应</div><button class="copy" type="button">复制</button><pre>{"config": { … }, "revision": "cfg_…", "changed": true}</pre></div>
     <p class="note">内容和当前完全一样时不会重复写入，返回 <code>changed: false</code>。</p>
   </div>
