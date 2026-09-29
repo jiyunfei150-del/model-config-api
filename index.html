@@ -135,11 +135,10 @@ footer{margin-top:56px;color:var(--muted);font-size:13px;border-top:1px solid va
   <div class="tbl"><table>
     <thead><tr><th>项</th><th>说明</th></tr></thead>
     <tbody>
-      <tr><td>鉴权</td><td>请求头 <code>X-Api-Token</code>（服务令牌，由 BFF 持有，浏览器不直接拿）。</td></tr>
+      <tr><td>鉴权</td><td>与现有问数接口（<code>/ask/stream</code>）相同：调问数时怎么带 <code>X-Api-Token</code>，这里就怎么带，不需要额外处理。</td></tr>
       <tr><td>操作人</td><td>可选请求头 <code>X-Operator: &lt;用户标识&gt;</code>，记录谁保存的。</td></tr>
-      <tr><td>实例</td><td>每个环境（预发 / 正式）各自一份配置，BFF 按环境转发到对应服务。</td></tr>
       <tr><td>失败格式</td><td><code>{"error": {"code", "message", "field_errors": [{"path","code","message"}], "current_revision"}}</code>；<code>path</code> 直接指到你们提交的 JSON，如 <code>/engines/cc/tiers/low</code>。</td></tr>
-      <tr><td>状态码</td><td>401 令牌不对 · 404 厂商不存在，或服务器没打开模型配置开关（整组接口不存在）· 409 版本冲突 · 422 字段错误或 Key 无效 · 429 厂商限流 · 502 厂商请求失败 · 503 服务器没配 API token</td></tr>
+      <tr><td>状态码</td><td>401 令牌不对 · 404 厂商不存在，或服务器没打开模型配置开关（整组接口不存在）· 409 版本冲突 · 422 字段错误或 Key 无效 · 429 厂商限流 · 502 厂商请求失败</td></tr>
     </tbody>
   </table></div>
 </section>
