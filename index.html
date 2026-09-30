@@ -138,9 +138,9 @@ footer{margin-top:56px;color:var(--muted);font-size:13px;border-top:1px solid va
     <thead><tr><th>项</th><th>说明</th></tr></thead>
     <tbody>
       <tr><td>鉴权</td><td>与现有问数接口（<code>/ask/stream</code>）相同：调问数时怎么带 <code>X-Api-Token</code>，这里就怎么带，不需要额外处理。</td></tr>
-      <tr><td>环境</td><td>读取 / 校验 / 保存配置必带查询参数 <code>env</code>，指明是哪个环境的配置：<code>1</code> 正式（18765）、<code>2</code> 预发（18766）；测试机只有 <code>1</code>。例：<code>PUT /config?env=1</code>。用编号不用端口，端口以后变了前端不用改。不带返回 422；本机没有该环境返回 404 <code>ENV_NOT_FOUND</code>。</td></tr>
+      <tr><td>环境</td><td>读取 / 校验 / 保存配置必须指明环境：请求体里的 <code>env_code</code> 或查询参数 <code>env</code>，<code>1</code> 正式（18765）、<code>2</code> 预发（18766）；测试机只有 <code>1</code>。例：<code>PUT /config?env=1</code>。用编号不用端口，端口以后变了前端不用改。不带返回 422；本机没有该环境返回 404 <code>ENV_NOT_FOUND</code>。</td></tr>
       <tr><td>操作人</td><td>可选请求头 <code>X-Operator: &lt;用户标识&gt;</code>，记录谁保存的。</td></tr>
-      <tr><td>失败格式</td><td><code>{"error": {"code", "message", "field_errors": [{"path","code","message"}], "current_revision"}}</code>；<code>path</code> 直接指到你们提交的 JSON，如 <code>/engines/cc/tiers/low</code>。</td></tr>
+      <tr><td>失败格式</td><td><code>{"error": {"code", "message", "field_errors": [{"path","code","message"}], "current_revision"}}</code>；<code>path</code> 直接指到你们提交的 JSON，如 <code>/frameworks/cc/low_model_id</code>、<code>/models/3/key_id</code>。</td></tr>
       <tr><td>状态码</td><td>401 令牌不对 · 404 厂商不存在，或服务器没打开模型配置开关（整组接口不存在）· 409 版本冲突 · 422 字段错误或 Key 无效 · 429 厂商限流 · 502 厂商请求失败</td></tr>
     </tbody>
   </table></div>
@@ -208,7 +208,7 @@ footer{margin-top:56px;color:var(--muted);font-size:13px;border-top:1px solid va
 
   <div class="ep" id="config-get">
     <div class="ep-head"><span class="m get">GET</span><span class="path">/config?env=1</span></div>
-    <p class="ep-desc">可选。平时不用调：前端上线时取一次 <code>initial</code> 作为初始值；之后只用于排查服务器上当前生效的配置。Key 只返回来源与掩码。</p>
+    <p class="ep-desc">可选。平时不用调：前端上线时取一次 <code>initial</code> 作为初始值；之后只用于排查服务器上当前生效的配置。返回的是后端内部格式（<code>modes</code> / <code>engines.*.tiers</code> / <code>conclusion</code>，每档直接写厂商和模型名），不是推送用的编号格式。Key 只返回来源与掩码。</p>
     <div class="code"><div class="lbl">已保存过</div><button class="copy" type="button">复制</button><pre>{
   "config": { …与保存时同形状，keys[] 见下表… ,
               "revision": "cfg_…", "updated_at": "2026-09-29T10:00:00+00:00",
@@ -236,45 +236,51 @@ footer{margin-top:56px;color:var(--muted);font-size:13px;border-top:1px solid va
 
   <div class="ep" id="config-body">
     <h3 style="margin-top:0">请求体（试校验与保存相同）</h3>
+    <p class="ep-desc">按平台库里的编号推送：各档与结果模型只写模型编号，<code>models</code> 说明每个编号是哪个厂商的哪个模型、用哪把 Key，<code>keys</code> 带 Key 的密钥。</p>
     <div class="code"><button class="copy" type="button" style="top:8px">复制</button><pre>{
-  "modes": {"deep": "cc", "quick": "react"},
-  "keys": [
-    {"id": "k_an",  "provider": "anthropic",  "name": "公共 Key", "secret": "sk-…"},
-    {"id": "k_glm", "provider": "glm_coding", "name": "公共 Key", "secret": "sk-…"},
-    {"id": "k_oa",  "provider": "openapi",    "name": "公共 Key", "secret": "sk-…"},
-    {"id": "k_gw",  "provider": "gateway",    "name": "公共 Key", "secret_env": "AI_GATEWAY_KEY"}
-  ],
-  "engines": {
-    "cc": {"enabled": true, "provider": "anthropic", "tiers": {
-      "low":    {"key": "k_glm", "model": "glm-5.3", "name": "glm-5.3"},
-      "medium": {"key": "k_an",  "model": "claude-opus-5-5", "name": "Opus · 官方主用"},
-      "high":   {"key": "k_an",  "model": "claude-fable-5-1"}}},
-    "codex": {"enabled": true, "provider": "gateway", "tiers": {"low": {…}, "medium": {…}, "high": {…}}},
-    "react": {"enabled": true, "provider": "auto",    "tiers": {"low": {…}, "medium": {…}, "high": {…}}}
+  "env_code": 1,
+  "quick_engine": "react",
+  "deep_engine": "cc",
+  "frameworks": {
+    "cc":    {"enabled": true, "low_model_id": 21, "medium_model_id": 22, "high_model_id": 22},
+    "codex": {"enabled": true, "low_model_id": 23, "medium_model_id": 24, "high_model_id": 24},
+    "react": {"enabled": true, "low_model_id": 25, "medium_model_id": 25, "high_model_id": 25}
   },
-  "conclusion": {
-    "primary":  {"key": "k_oa", "model": "local/glm-5.3-flash"},
-    "fallback": {"key": "k_oa", "model": "local/qwen38-flash-next"}
-  }
+  "result": {"primary_model_id": 10, "fallback_model_id": 12},
+  "models": [
+    {"id": 10, "provider": "openapi",    "model": "local/glm-5.3-flash",     "name": "GLM-5.3-FLASH", "key_id": 3},
+    {"id": 12, "provider": "openapi",    "model": "local/qwen38-flash-next", "name": "Qwen",          "key_id": 3},
+    {"id": 21, "provider": "glm_coding", "model": "glm-5.3[1m]",             "name": "glm-5.3",       "key_id": 4},
+    {"id": 22, "provider": "anthropic",  "model": "claude-opus-5-5",         "name": "Opus",          "key_id": 5},
+    {"id": 23, "provider": "glm_coding", "model": "glm-5.3",                 "name": "glm-5.3",       "key_id": 4},
+    {"id": 24, "provider": "gateway",    "model": "gpt-5.6-sol",             "name": "sol"},
+    {"id": 25, "provider": "minimax",    "model": "MiniMax-M3",              "name": "MiniMax",       "key_id": 6}
+  ],
+  "keys": [
+    {"id": 3, "provider": "openapi",    "name": "公共 Key", "secret": "sk-…"},
+    {"id": 4, "provider": "glm_coding", "name": "公共 Key", "secret": "sk-…"},
+    {"id": 5, "provider": "anthropic",  "name": "官方 Key", "secret": "sk-…"},
+    {"id": 6, "provider": "minimax",    "name": "公共 Key", "secret": "sk-…"}
+  ]
 }</pre></div>
     <div class="tbl"><table>
       <thead><tr><th>字段</th><th>说明</th></tr></thead>
       <tbody>
-        <tr><td><code>modes</code></td><td>深度 / 快速模式各由哪个框架承接，值为 <code>cc</code> / <code>codex</code> / <code>react</code>。界面叫 cx 的框架写 <code>codex</code>。</td></tr>
-        <tr><td><code>keys[]</code></td><td><code>id</code>（字母数字开头，最长 64 位，长期不变）、<code>provider</code>（厂商标识）、<code>name</code>（显示名），加密钥给法之一，见下。</td></tr>
-        <tr><td>每档模型</td><td><code>model</code>=厂商那边的实际模型名（可从「列可用模型」选）；<code>key</code>=keys 里的 id；<code>name</code>=显示名，可选。不给 <code>key</code> 时写 <code>provider</code>，用该厂商的服务器默认 Key。</td></tr>
-        <tr><td><code>engines.*.provider</code></td><td>页面的「接入厂商」选择，只做记录；实际调用按每档所选 Key 的厂商走。<code>auto</code>=按模型自动路由。</td></tr>
-        <tr><td><code>engines.*.enabled</code></td><td>框架开关。开启的框架三档都必须选；模式不能指向关掉的框架。</td></tr>
-        <tr><td><code>conclusion</code></td><td>结果主模型与兜底，三个框架共用。必须是能处理业务数据的厂商，且主备不能是同一个。</td></tr>
+        <tr><td><code>env_code</code></td><td>环境：<code>1</code> 正式、<code>2</code> 预发。也可以放查询参数 <code>?env=</code>，两处都给时以查询参数为准。</td></tr>
+        <tr><td><code>quick_engine</code> / <code>deep_engine</code></td><td>快速 / 深度模式由哪个框架承接：<code>cc</code> / <code>codex</code> / <code>react</code>（界面叫 cx 的写 <code>codex</code>）。</td></tr>
+        <tr><td><code>frameworks.*</code></td><td><code>enabled</code> 框架开关；<code>low_model_id</code> / <code>medium_model_id</code> / <code>high_model_id</code> 三档的模型编号。开启的框架三档都必须选；模式不能指向关掉的框架。</td></tr>
+        <tr><td><code>result</code></td><td>结果主模型与兜底的模型编号，三个框架共用。必须是能处理业务数据的厂商（目前只有 OpenAPI 内网网关），且主备不能是同一个。</td></tr>
+        <tr><td><code>models[]</code></td><td>上面用到的每个模型编号：<code>provider</code> 厂商（取「接入厂商」返回的 id）、<code>model</code> 厂商那边的实际模型名（可从「列可用模型」选）、<code>name</code> 显示名、<code>key_id</code> 用哪把 Key。不写 <code>key_id</code> 用服务器上该厂商的默认 Key。</td></tr>
+        <tr><td><code>keys[]</code></td><td>Key 编号、厂商、显示名、密钥 <code>secret</code>。Key 的厂商要和用它的模型一致。</td></tr>
+        <tr><td><code>revision</code></td><td>可以不传，传了也不参与判断。</td></tr>
       </tbody>
     </table></div>
-    <h3>Key 三种给法</h3>
+    <h3>Key 的密钥</h3>
     <div class="tbl"><table>
       <thead><tr><th>写法</th><th>含义</th></tr></thead>
       <tbody>
-        <tr><td><code>"secret": "sk-…"</code></td><td>明文。新建或更换 Key 时用。</td></tr>
-        <tr><td><code>"secret_env": "变量名"</code></td><td>用服务器上的环境变量。</td></tr>
-        <tr><td>都不给</td><td>沿用已保存的那份（同一 id 且厂商没变）。新 Key 必须给。不改 Key 时去掉 <code>secret</code> 字段即可，不要把掩码传回来。</td></tr>
+        <tr><td><code>"secret": "sk-…"</code></td><td>明文。每次推送都带上即可（配置以前端为准）。</td></tr>
+        <tr><td>不写 <code>secret</code></td><td>沿用服务器上已保存的同编号、同厂商那把 Key；新 Key 必须给。不要把掩码当密钥传回来。</td></tr>
       </tbody>
     </table></div>
   </div>
@@ -284,8 +290,8 @@ footer{margin-top:56px;color:var(--muted);font-size:13px;border-top:1px solid va
     <p class="ep-desc">试校验，不保存、不落 Key。<code>valid=true</code> 表示这份内容现在保存一定能过校验。</p>
     <div class="code"><div class="lbl">响应</div><button class="copy" type="button">复制</button><pre>{"valid": false,
  "errors": [
-   {"path": "/conclusion/primary", "code": "DATA_POLICY_DENIED",
-    "message": "AI 网关（主网关） 的 GLM-5.3-FLASH 未登记可处理真实业务数据，不能当结果模型"}
+   {"path": "/result/primary_model_id", "code": "DATA_POLICY_DENIED",
+    "message": "AI 网关（主网关） 的 gpt-5.6-sol 未登记可处理真实业务数据，不能当结果模型"}
  ]}</pre></div>
   </div>
 
@@ -331,7 +337,7 @@ footer{margin-top:56px;color:var(--muted);font-size:13px;border-top:1px solid va
       <tr><td><code>SECRET_UNAVAILABLE</code></td><td>没给密钥，服务器也没有默认 Key</td><td>请填写 Key</td></tr>
       <tr><td><code>REQUIRED</code></td><td>开启的框架缺档 / 主备缺一 / 模式没选</td><td>标红对应项</td></tr>
       <tr><td><code>UNKNOWN_PROVIDER</code></td><td>厂商不在已适配清单里</td><td>重新选厂商</td></tr>
-      <tr><td><code>DANGLING_REFERENCE</code></td><td>引用了不存在的 Key</td><td>重新选 Key</td></tr>
+      <tr><td><code>DANGLING_REFERENCE</code></td><td>用到的模型编号不在 models 里，或模型的 key_id 不在 keys 里</td><td>把用到的模型、Key 都带上</td></tr>
       <tr><td><code>ENGINE_INCOMPATIBLE</code></td><td>该框架用不了这家（协议不支持）</td><td>换厂商或换框架</td></tr>
       <tr><td><code>ENGINE_DISABLED</code></td><td>模式指向了关掉的框架</td><td>同一次保存里改掉模式映射</td></tr>
       <tr><td><code>DATA_POLICY_DENIED</code></td><td>该厂商不能处理业务数据，不能当结果模型</td><td>结果模型改选内网模型</td></tr>
