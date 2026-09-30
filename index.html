@@ -166,7 +166,7 @@ footer{margin-top:56px;color:var(--muted);font-size:13px;border-top:1px solid va
       <thead><tr><th>字段</th><th>说明</th></tr></thead>
       <tbody>
         <tr><td><code>id</code></td><td>厂商标识，配置里的 <code>provider</code> 填它。目前有 <code>gateway</code>（AI 网关）、<code>openapi</code>（OpenAPI 内网网关）、<code>anthropic</code>、<code>glm_coding</code>、<code>deepseek</code>、<code>minimax</code>。</td></tr>
-        <tr><td><code>business_data</code></td><td>能否处理真实业务数据。只有 <code>true</code> 的厂商能当「结果与分析模型」；目前只有 OpenAPI 内网网关。也可能是模型名清单，表示只有这些模型可以。</td></tr>
+        <tr><td><code>business_data</code></td><td>是否内网（可处理真实业务数据）；目前只有 OpenAPI 内网网关是 <code>true</code>。也可能是模型名清单，表示只有这些模型算内网。页面可据此标「内部自建 / 外部厂商」；结果模型选了非内网厂商不拦，只在校验 / 保存时给提醒。</td></tr>
         <tr><td><code>default_key.configured</code></td><td>服务器上已有这家的默认 Key，页面不给 Key 也能用。</td></tr>
         <tr><td><code>static_models</code></td><td>厂商没有列模型接口时后端登记的固定清单。</td></tr>
       </tbody>
@@ -269,7 +269,7 @@ footer{margin-top:56px;color:var(--muted);font-size:13px;border-top:1px solid va
         <tr><td><code>env_code</code></td><td>环境：<code>1</code> 正式、<code>2</code> 预发。也可以放查询参数 <code>?env=</code>，两处都给时以查询参数为准。</td></tr>
         <tr><td><code>quick_engine</code> / <code>deep_engine</code></td><td>快速 / 深度模式由哪个框架承接：<code>cc</code> / <code>codex</code> / <code>react</code>（界面叫 cx 的写 <code>codex</code>）。</td></tr>
         <tr><td><code>frameworks.*</code></td><td><code>enabled</code> 框架开关；<code>low_model_id</code> / <code>medium_model_id</code> / <code>high_model_id</code> 三档的模型编号。开启的框架三档都必须选；模式不能指向关掉的框架。</td></tr>
-        <tr><td><code>result</code></td><td>结果主模型与兜底的模型编号，三个框架共用。必须是能处理业务数据的厂商（目前只有 OpenAPI 内网网关），且主备不能是同一个。</td></tr>
+        <tr><td><code>result</code></td><td>结果主模型与兜底的模型编号，三个框架共用，主备不能是同一个。结果模型会看到全量业务数据：选了非内网厂商照样能保存，响应里会带一条 <code>warnings</code> 提醒。</td></tr>
         <tr><td><code>models[]</code></td><td>上面用到的每个模型编号：<code>provider</code> 厂商（取「接入厂商」返回的 id）、<code>model</code> 厂商那边的实际模型名（可从「列可用模型」选）、<code>name</code> 显示名、<code>key_id</code> 用哪把 Key。不写 <code>key_id</code> 用服务器上该厂商的默认 Key。</td></tr>
         <tr><td><code>keys[]</code></td><td>Key 编号、厂商、显示名、密钥 <code>secret</code>。Key 的厂商要和用它的模型一致。</td></tr>
         <tr><td><code>revision</code></td><td>可以不传，传了也不参与判断。</td></tr>
@@ -287,18 +287,21 @@ footer{margin-top:56px;color:var(--muted);font-size:13px;border-top:1px solid va
 
   <div class="ep" id="config-validate">
     <div class="ep-head"><span class="m post">POST</span><span class="path">/config/validate?env=1</span></div>
-    <p class="ep-desc">试校验，不保存、不落 Key。<code>valid=true</code> 表示这份内容现在保存一定能过校验。</p>
-    <div class="code"><div class="lbl">响应</div><button class="copy" type="button">复制</button><pre>{"valid": false,
- "errors": [
-   {"path": "/result/primary_model_id", "code": "DATA_POLICY_DENIED",
-    "message": "AI 网关（主网关） 的 gpt-5.6-sol 未登记可处理真实业务数据，不能当结果模型"}
- ]}</pre></div>
+    <p class="ep-desc">试校验，不保存、不落 Key。<code>valid=true</code> 表示这份内容现在保存一定能过校验；<code>errors</code> 是必须改的问题，<code>warnings</code> 是不拦保存的提醒。</p>
+    <div class="code"><div class="lbl">响应</div><button class="copy" type="button">复制</button><pre>{"valid": true,
+ "errors": [],
+ "warnings": [
+   {"path": "/result/primary_model_id", "code": "EXTERNAL_BUSINESS_DATA",
+    "message": "智谱 GLM Coding 不在内网：结果模型会把真实业务数据（取数结果与明细）发到该厂商"}
+ ],
+ "revision": "cfg_…"}</pre></div>
+    <p class="note">页面可以把 <code>warnings</code> 显示在对应的表单项旁边，提醒但不阻止保存。</p>
   </div>
 
   <div class="ep" id="config-put">
     <div class="ep-head"><span class="m put">PUT</span><span class="path">/config?env=1</span></div>
     <p class="ep-desc">整份保存（配置以前端为准，每次推完整的一份）。可选请求头 <code>If-Match: "&lt;revision&gt;"</code>：带了且与服务器当前版本不一致会返回 409；前端是配置正本时不用带。</p>
-    <div class="code"><div class="lbl">响应</div><button class="copy" type="button">复制</button><pre>{"config": { … }, "revision": "cfg_…", "changed": true}</pre></div>
+    <div class="code"><div class="lbl">响应</div><button class="copy" type="button">复制</button><pre>{"config": { … }, "revision": "cfg_…", "changed": true, "warnings": []}</pre></div>
     <p class="note">内容和当前完全一样时不会重复写入，返回 <code>changed: false</code>。</p>
   </div>
 </section>
@@ -340,7 +343,7 @@ footer{margin-top:56px;color:var(--muted);font-size:13px;border-top:1px solid va
       <tr><td><code>DANGLING_REFERENCE</code></td><td>用到的模型编号不在 models 里，或模型的 key_id 不在 keys 里</td><td>把用到的模型、Key 都带上</td></tr>
       <tr><td><code>ENGINE_INCOMPATIBLE</code></td><td>该框架用不了这家（协议不支持）</td><td>换厂商或换框架</td></tr>
       <tr><td><code>ENGINE_DISABLED</code></td><td>模式指向了关掉的框架</td><td>同一次保存里改掉模式映射</td></tr>
-      <tr><td><code>DATA_POLICY_DENIED</code></td><td>该厂商不能处理业务数据，不能当结果模型</td><td>结果模型改选内网模型</td></tr>
+      <tr><td><code>EXTERNAL_BUSINESS_DATA</code>（提醒，不是错误）</td><td>结果模型选了非内网厂商，业务数据会发到该厂商</td><td>显示提醒；确认无误可照常保存</td></tr>
       <tr><td><code>SAME_CALL_TARGET</code></td><td>兜底和主模型是同一个</td><td>换一个兜底模型</td></tr>
       <tr><td><code>ENV_NOT_FOUND</code></td><td><code>env</code> 指的环境在这台服务器上不存在</td><td>检查环境选择（测试机只有 env=1）</td></tr>
       <tr><td><code>REVISION_CONFLICT</code></td><td>别人先保存了</td><td>重新读取后再改</td></tr>
