@@ -313,7 +313,10 @@ footer{margin-top:56px;color:var(--muted);font-size:13px;border-top:1px solid va
     <p class="ep-desc">发一条最小请求测模型通不通，不保存任何东西。密钥给法同「列可用模型」。</p>
     <div class="code"><div class="lbl">请求（登记模型时，不传 purpose）</div><button class="copy" type="button">复制</button><pre>{"provider": "gateway", "model": "gpt-5.6-sol", "secret": "sk-…"}</pre></div>
     <div class="code"><div class="lbl">响应</div><button class="copy" type="button">复制</button><pre>{"provider_id": "gateway", "model": "gpt-5.6-sol",
- "ok": true, "outcome": "ok", "http_status": 200, "latency_ms": 1721,
+ "ok": true,
+ "summary": "连通成功，可用于：cx",
+ "usable_in": ["codex"],
+ "outcome": "ok", "http_status": 200, "latency_ms": 1721,
  "protocol": "responses", "message": "HTTP 200",
  "frameworks": {
    "cc":         {"usable": false, "outcome": "request_rejected", "protocol": "anthropic"},
@@ -322,7 +325,7 @@ footer{margin-top:56px;color:var(--muted);font-size:13px;border-top:1px solid va
    "conclusion": {"usable": false, "outcome": "request_rejected", "protocol": "anthropic"}
  },
  "checks": [ …每种接口一条：protocol / outcome / http_status / latency_ms… ]}</pre></div>
-    <p class="note">不传 <code>purpose</code> 时，后端把这家厂商开着的每种接口都测一遍：<code>ok</code> 表示至少有一种通，<code>frameworks</code> 告诉你这个模型能放进哪些框架（cc / cx=codex / react / 结果模型），页面可以据此只在能用的框架下拉里显示它。厂商根本没有某框架需要的接口时，该项 <code>outcome</code> 为 <code>unsupported</code>。</p>
+    <p class="note"><b>页面只需要看 <code>ok</code> 和 <code>summary</code></b>：通了显示「连通成功，可用于：cx」，不通显示最要紧的原因，比如「连通失败：Key 无效」。<code>usable_in</code> 是能用的框架列表，给各框架的模型下拉做筛选，用户就选不到不兼容的组合。<code>frameworks</code> / <code>checks</code> 是逐项明细，排查时再看。<br>不传 <code>purpose</code> 时，后端把这家厂商开着的每种接口都测一遍：<code>ok</code> 表示至少有一种通，<code>frameworks</code> 告诉你这个模型能放进哪些框架（cc / cx=codex / react / 结果模型），页面可以据此只在能用的框架下拉里显示它。厂商根本没有某框架需要的接口时，该项 <code>outcome</code> 为 <code>unsupported</code>。</p>
     <div class="tbl"><table>
       <thead><tr><th>outcome</th><th>含义</th></tr></thead>
       <tbody>
