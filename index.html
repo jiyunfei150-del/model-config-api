@@ -199,7 +199,7 @@ footer{margin-top:56px;color:var(--muted);font-size:13px;border-top:1px solid va
         <tr><td><code>manual</code></td><td>两者都没有</td><td>让用户手填模型名</td></tr>
       </tbody>
     </table></div>
-    <p class="note">Key 无效返回 422（<code>AUTH_FAILED</code>），限流 429，连不上或超时 502。</p>
+    <p class="note">Key 无效返回 422（<code>AUTH_FAILED</code>），Key 没权限返回 422（<code>FORBIDDEN</code>），限流 429，连不上或超时 502。<br>注意：模型列表列的是厂商（网关）上的全部模型，不代表这把 Key 都有权限调用；登记前用连通测试确认。</p>
   </div>
 </section>
 
@@ -330,7 +330,8 @@ footer{margin-top:56px;color:var(--muted);font-size:13px;border-top:1px solid va
       <thead><tr><th>outcome</th><th>含义</th></tr></thead>
       <tbody>
         <tr><td><code>ok</code></td><td>通了</td></tr>
-        <tr><td><code>auth_failed</code></td><td>Key 无效</td></tr>
+        <tr><td><code>auth_failed</code></td><td>Key 无效（HTTP 401）</td></tr>
+        <tr><td><code>forbidden</code></td><td>Key 有效，但没有这个模型的调用权限（HTTP 403）。网关按模型授权时常见：模型列表里有，调用却 403。换有权限的 Key 或换厂商</td></tr>
         <tr><td><code>model_not_found</code></td><td>模型名不对，或这家没有这个模型</td></tr>
         <tr><td><code>rate_limited</code></td><td>被限流，不代表 Key 无效</td></tr>
         <tr><td><code>request_rejected</code></td><td>请求被拒（常见于模型名或参数不被接受）</td></tr>
