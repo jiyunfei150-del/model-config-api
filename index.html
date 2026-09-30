@@ -127,7 +127,7 @@ footer{margin-top:56px;color:var(--muted);font-size:13px;border-top:1px solid va
     <li><span>用户添加模型时，用 <code>POST /providers/{id}/models</code> 列出这把 Key 能用的模型供选择。</span></li>
     <li><span>需要时用 <code>POST /connectivity</code> 测某个模型通不通。</span></li>
     <li><span>点「校验」调 <code>POST /config/validate</code>，把 <code>errors[].path</code> 标到对应的表单项上。</span></li>
-    <li><span>点「保存」调 <code>PUT /config</code>，把整份配置推给我们。配置以前端为准，每次都推完整的一份。</span></li>
+    <li><span>点「保存」调 <code>PUT /config?port=…</code>，把整份配置推给我们（<code>port</code> 指明哪个环境）。配置以前端为准，每次都推完整的一份。</span></li>
   </ol>
   <p class="note">前端上线时只需做一次：调 <code>GET /config</code> 取 <code>initial</code>（按服务器当前在用的模型算好的一份）作为页面初始值。之后平时不用调它，它只用于排查服务器上当前生效的是哪一份。</p>
 </section>
@@ -138,6 +138,7 @@ footer{margin-top:56px;color:var(--muted);font-size:13px;border-top:1px solid va
     <thead><tr><th>项</th><th>说明</th></tr></thead>
     <tbody>
       <tr><td>鉴权</td><td>与现有问数接口（<code>/ask/stream</code>）相同：调问数时怎么带 <code>X-Api-Token</code>，这里就怎么带，不需要额外处理。</td></tr>
+      <tr><td>环境</td><td>读取 / 校验 / 保存配置必带查询参数 <code>port</code>，指明是哪个环境的配置：<code>18765</code> 正式、<code>18766</code> 预发（测试机只有 <code>18765</code>）。例：<code>PUT /config?port=18765</code>。不带返回 422；本机没有该环境返回 404 <code>ENV_NOT_FOUND</code>。</td></tr>
       <tr><td>操作人</td><td>可选请求头 <code>X-Operator: &lt;用户标识&gt;</code>，记录谁保存的。</td></tr>
       <tr><td>失败格式</td><td><code>{"error": {"code", "message", "field_errors": [{"path","code","message"}], "current_revision"}}</code>；<code>path</code> 直接指到你们提交的 JSON，如 <code>/engines/cc/tiers/low</code>。</td></tr>
       <tr><td>状态码</td><td>401 令牌不对 · 404 厂商不存在，或服务器没打开模型配置开关（整组接口不存在）· 409 版本冲突 · 422 字段错误或 Key 无效 · 429 厂商限流 · 502 厂商请求失败</td></tr>
@@ -206,7 +207,7 @@ footer{margin-top:56px;color:var(--muted);font-size:13px;border-top:1px solid va
   <h2>页面配置</h2>
 
   <div class="ep" id="config-get">
-    <div class="ep-head"><span class="m get">GET</span><span class="path">/config</span></div>
+    <div class="ep-head"><span class="m get">GET</span><span class="path">/config?port=18765</span></div>
     <p class="ep-desc">可选。平时不用调：前端上线时取一次 <code>initial</code> 作为初始值；之后只用于排查服务器上当前生效的配置。Key 只返回来源与掩码。</p>
     <div class="code"><div class="lbl">已保存过</div><button class="copy" type="button">复制</button><pre>{
   "config": { …与保存时同形状，keys[] 见下表… ,
@@ -279,7 +280,7 @@ footer{margin-top:56px;color:var(--muted);font-size:13px;border-top:1px solid va
   </div>
 
   <div class="ep" id="config-validate">
-    <div class="ep-head"><span class="m post">POST</span><span class="path">/config/validate</span></div>
+    <div class="ep-head"><span class="m post">POST</span><span class="path">/config/validate?port=18765</span></div>
     <p class="ep-desc">试校验，不保存、不落 Key。<code>valid=true</code> 表示这份内容现在保存一定能过校验。</p>
     <div class="code"><div class="lbl">响应</div><button class="copy" type="button">复制</button><pre>{"valid": false,
  "errors": [
@@ -289,7 +290,7 @@ footer{margin-top:56px;color:var(--muted);font-size:13px;border-top:1px solid va
   </div>
 
   <div class="ep" id="config-put">
-    <div class="ep-head"><span class="m put">PUT</span><span class="path">/config</span></div>
+    <div class="ep-head"><span class="m put">PUT</span><span class="path">/config?port=18765</span></div>
     <p class="ep-desc">整份保存（配置以前端为准，每次推完整的一份）。可选请求头 <code>If-Match: "&lt;revision&gt;"</code>：带了且与服务器当前版本不一致会返回 409；前端是配置正本时不用带。</p>
     <div class="code"><div class="lbl">响应</div><button class="copy" type="button">复制</button><pre>{"config": { … }, "revision": "cfg_…", "changed": true}</pre></div>
     <p class="note">内容和当前完全一样时不会重复写入，返回 <code>changed: false</code>。</p>
@@ -335,6 +336,7 @@ footer{margin-top:56px;color:var(--muted);font-size:13px;border-top:1px solid va
       <tr><td><code>ENGINE_DISABLED</code></td><td>模式指向了关掉的框架</td><td>同一次保存里改掉模式映射</td></tr>
       <tr><td><code>DATA_POLICY_DENIED</code></td><td>该厂商不能处理业务数据，不能当结果模型</td><td>结果模型改选内网模型</td></tr>
       <tr><td><code>SAME_CALL_TARGET</code></td><td>兜底和主模型是同一个</td><td>换一个兜底模型</td></tr>
+      <tr><td><code>ENV_NOT_FOUND</code></td><td><code>port</code> 指的环境在这台服务器上不存在</td><td>检查环境选择（测试机只有 18765）</td></tr>
       <tr><td><code>REVISION_CONFLICT</code></td><td>别人先保存了</td><td>重新读取后再改</td></tr>
       <tr><td><code>AUTH_FAILED</code></td><td>列模型时 Key 无效</td><td>检查 Key</td></tr>
     </tbody>
